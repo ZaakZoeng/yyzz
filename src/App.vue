@@ -22,6 +22,15 @@ const dayCount = computed(() => {
   return Math.max(1, Math.floor(elapsed / 86_400_000) + 1);
 });
 
+const togetherClock = computed(() => {
+  const elapsed = Math.max(0, now.value.getTime() - relationshipStartedAt.getTime());
+  const hours = Math.floor((elapsed % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((elapsed % 3_600_000) / 60_000);
+  const seconds = Math.floor((elapsed % 60_000) / 1_000);
+
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0"));
+});
+
 const nextAnniversary = computed(() => {
   const year = now.value.getFullYear();
   let target = new Date(`${year}-04-05T00:00:00+08:00`);
@@ -63,7 +72,7 @@ function handleScroll() {
 onMounted(() => {
   const savedTheme = window.localStorage.getItem("yyzz-color-theme");
   applyTheme(savedTheme === "dark" ? "dark" : "light");
-  clock = window.setInterval(() => (now.value = new Date()), 60_000);
+  clock = window.setInterval(() => (now.value = new Date()), 1_000);
   handleScroll();
   window.addEventListener("scroll", handleScroll, { passive: true });
 
@@ -154,6 +163,15 @@ onBeforeUnmount(() => {
             <span class="card-label">WE HAVE BEEN TOGETHER</span>
             <strong>{{ dayCount }}</strong>
             <span class="days-label">DAYS</span>
+            <div
+              class="together-clock"
+              :aria-label="`今天已经一起度过 ${togetherClock[0]} 小时 ${togetherClock[1]} 分钟 ${togetherClock[2]} 秒`"
+            >
+              <span>{{ togetherClock[0] }}</span><i>:</i>
+              <span>{{ togetherClock[1] }}</span><i>:</i>
+              <span>{{ togetherClock[2] }}</span>
+            </div>
+            <span class="clock-label">HOURS&nbsp;&nbsp; MINUTES&nbsp;&nbsp; SECONDS</span>
             <div class="card-divider"></div>
             <p>自 2018.04.05 起</p>
           </div>
@@ -361,7 +379,11 @@ h1, h2, h3, p { margin-top: 0; }
 .card-label { font-size: 9px; font-weight: 700; letter-spacing: .22em; }
 .love-card strong { margin: 18px 0 -5px; font-family: "DM Serif Display", Georgia, serif; font-size: 112px; line-height: 1; font-weight: 400; }
 .days-label { font-size: 11px; letter-spacing: .36em; }
-.card-divider { width: 42px; height: 1px; margin: 31px 0 19px; background: rgba(255,255,255,.45); }
+.together-clock { display: flex; align-items: center; gap: 7px; margin-top: 19px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.together-clock span { width: 25px; }
+.together-clock i { color: rgba(255,255,255,.55); font-style: normal; animation: clock-pulse 1s steps(1, end) infinite; }
+.clock-label { margin-top: 5px; color: rgba(255,255,255,.58); font-size: 6px; letter-spacing: .12em; }
+.card-divider { width: 42px; height: 1px; margin: 23px 0 19px; background: rgba(255,255,255,.45); }
 .love-card p { margin: 0; font-family: "Noto Serif SC", serif; font-size: 13px; letter-spacing: .16em; }
 .orbit { position: absolute; border: 1px solid rgba(106, 73, 65, .16); border-radius: 50%; }
 .orbit-one { width: 480px; height: 480px; }
@@ -422,7 +444,7 @@ main section[id] { scroll-margin-top: 78px; }
 .hero-copy > :nth-child(4) { animation-delay: .24s; }
 .hero-visual { animation: rise-in .9s .18s cubic-bezier(.2, .7, .2, 1) both; }
 .love-card { animation: card-float 6s ease-in-out infinite; }
-.orbit-one { animation: orbit-spin 28s linear infinite; }
+.orbit-one { animation: orbit-spin 60s linear infinite; }
 .orbit-one::after {
   content: "";
   position: absolute;
@@ -464,6 +486,9 @@ main section[id] { scroll-margin-top: 78px; }
 @keyframes sparkle {
   0%, 100% { opacity: .35; transform: scale(.8) rotate(0); }
   50% { opacity: 1; transform: scale(1.15) rotate(15deg); }
+}
+@keyframes clock-pulse {
+  50% { opacity: .35; }
 }
 
 .theme-dark .topbar { background: rgba(17, 23, 29, .7); }
@@ -547,7 +572,7 @@ main section[id] { scroll-margin-top: 78px; }
 @media (prefers-reduced-motion: reduce) {
   :global(html) { scroll-behavior: auto; }
   * { transition: none !important; }
-  .hero-copy > *, .hero-visual, .love-card, .orbit-one, .orbit-two, .floating-note, .spark { animation: none !important; }
+  .hero-copy > *, .hero-visual, .love-card, .orbit-one, .orbit-two, .floating-note, .spark, .together-clock i { animation: none !important; }
   [data-reveal] { opacity: 1; transform: none; }
 }
 </style>
