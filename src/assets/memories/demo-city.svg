@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">蓝调城市夜景</title>
+  <desc id="desc">蓝色夜空、城市建筑与暖色灯光的抽象插画，不包含人物信息。</desc>
+  <defs><linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#233d58"/><stop offset="1" stop-color="#7898ad"/></linearGradient></defs>
+  <rect width="1200" height="750" fill="url(#night)"/>
+  <circle cx="905" cy="170" r="66" fill="#f9e6c8" opacity=".92"/>
+  <g fill="#e7d5cb" opacity=".55"><circle cx="160" cy="130" r="3"/><circle cx="330" cy="210" r="4"/><circle cx="720" cy="95" r="3"/></g>
+  <path d="M0 520h125V340h128v180h72V260h165v260h89V375h130v145h66V210h175v310h110V325h160v425H0Z" fill="#1e354b"/>
+  <g fill="#dca06e" opacity=".8"><path d="M158 386h24v30h-24zm0 62h24v30h-24zm211-132h29v36h-29zm55 0h29v36h-29zm0 74h29v36h-29zm375-128h28v38h-28zm55 0h28v38h-28zm0 80h28v38h-28zm215 30h30v38h-30z"/></g>
+  <path d="M0 612c255-42 390 58 625 12 215-43 387-26 575 15v111H0Z" fill="#527b9d" opacity=".6"/>
+</svg>

@@ -1,44 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import sunsetPhoto from "./assets/memory-sunset.jpg";
+import Backtop from "./components/Backtop.vue";
+import FootprintMap from "./components/FootprintMap.vue";
+import LoveTimeline from "./components/LoveTimeline.vue";
 
-type Memory = {
-  date: string;
-  title: string;
-  description: string;
-  tone: "rose" | "amber" | "sage";
-  image?: string;
-};
+type ColorTheme = "light" | "dark";
 
-const relationshipStartedAt = new Date("2024-05-20T00:00:00+08:00");
+const relationshipStartedAt = new Date("2018-04-05T00:00:00+08:00");
 const now = ref(new Date());
 const menuOpen = ref(false);
 const noteOpen = ref(false);
 const toast = ref("");
+const theme = ref<ColorTheme>("light");
+const headerScrolled = ref(false);
 let clock: number | undefined;
 let toastTimer: number | undefined;
-
-const memories: Memory[] = [
-  {
-    date: "2024 · 05 · 20",
-    title: "故事，从这一天开始",
-    description: "晚风、散步和一句认真说出口的喜欢，让平常的一天有了新的名字。",
-    tone: "rose",
-  },
-  {
-    date: "2025 · 04 · 10",
-    title: "一起追过的日落",
-    description: "相机留下了光，而我们记住了彼此笑起来的样子。",
-    tone: "amber",
-    image: sunsetPhoto,
-  },
-  {
-    date: "2026 · 05 · 20",
-    title: "第二个纪念日",
-    description: "日子缓慢向前，爱意却在每一顿饭、每一次分享里悄悄生长。",
-    tone: "sage",
-  },
-];
+let revealObserver: IntersectionObserver | undefined;
 
 const dayCount = computed(() => {
   const elapsed = now.value.getTime() - relationshipStartedAt.getTime();
@@ -47,9 +24,9 @@ const dayCount = computed(() => {
 
 const nextAnniversary = computed(() => {
   const year = now.value.getFullYear();
-  let target = new Date(`${year}-05-20T00:00:00+08:00`);
+  let target = new Date(`${year}-04-05T00:00:00+08:00`);
   if (target.getTime() <= now.value.getTime()) {
-    target = new Date(`${year + 1}-05-20T00:00:00+08:00`);
+    target = new Date(`${year + 1}-04-05T00:00:00+08:00`);
   }
   return Math.ceil((target.getTime() - now.value.getTime()) / 86_400_000);
 });
@@ -65,21 +42,63 @@ function showToast(message: string) {
   toastTimer = window.setTimeout(() => (toast.value = ""), 2400);
 }
 
+function applyTheme(nextTheme: ColorTheme) {
+  theme.value = nextTheme;
+  document.documentElement.dataset.theme = nextTheme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute(
+    "content",
+    nextTheme === "dark" ? "#11171d" : "#f8f4ed",
+  );
+  window.localStorage.setItem("yyzz-color-theme", nextTheme);
+}
+
+function toggleTheme() {
+  applyTheme(theme.value === "light" ? "dark" : "light");
+}
+
+function handleScroll() {
+  headerScrolled.value = window.scrollY > 12;
+}
+
 onMounted(() => {
+  const savedTheme = window.localStorage.getItem("yyzz-color-theme");
+  applyTheme(savedTheme === "dark" ? "dark" : "light");
   clock = window.setInterval(() => (now.value = new Date()), 60_000);
+  handleScroll();
+  window.addEventListener("scroll", handleScroll, { passive: true });
+
+  const revealTargets = document.querySelectorAll<HTMLElement>("[data-reveal]");
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    revealTargets.forEach((target) => target.classList.add("is-visible"));
+  } else {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            revealObserver?.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 },
+    );
+    revealTargets.forEach((target) => revealObserver?.observe(target));
+  }
 });
 
 onBeforeUnmount(() => {
   window.clearInterval(clock);
   window.clearTimeout(toastTimer);
+  window.removeEventListener("scroll", handleScroll);
+  revealObserver?.disconnect();
 });
 </script>
 
 <template>
-  <div class="site-shell">
-    <header class="topbar">
+  <div :class="['site-shell', `theme-${theme}`]">
+    <header :class="['topbar', { scrolled: headerScrolled }]">
       <button class="brand" type="button" aria-label="返回首页" @click="scrollToSection('home')">
-        <span class="brand-mark">Y<span>♡</span>Z</span>
+        <span class="brand-mark">YY<span>♡</span>ZZ</span>
         <span class="brand-copy">我们的爱情空间</span>
       </button>
 
@@ -95,8 +114,18 @@ onBeforeUnmount(() => {
 
       <nav :class="['nav', { open: menuOpen }]" aria-label="主导航">
         <button type="button" @click="scrollToSection('home')">首页</button>
-        <button type="button" @click="scrollToSection('story')">我们的故事</button>
+        <button type="button" @click="scrollToSection('story')">爱情点滴</button>
+        <button type="button" @click="scrollToSection('footprints')">足迹地图</button>
         <button type="button" @click="scrollToSection('wishlist')">小小愿望</button>
+        <button
+          class="theme-toggle"
+          type="button"
+          :aria-label="theme === 'light' ? '切换到暗色模式' : '切换到明亮模式'"
+          :title="theme === 'light' ? '切换到暗色模式' : '切换到明亮模式'"
+          @click="toggleTheme"
+        >
+          <span aria-hidden="true">{{ theme === 'light' ? '☾' : '☀' }}</span>
+        </button>
         <button class="nav-pill" type="button" @click="noteOpen = true">写给你</button>
       </nav>
     </header>
@@ -126,7 +155,7 @@ onBeforeUnmount(() => {
             <strong>{{ dayCount }}</strong>
             <span class="days-label">DAYS</span>
             <div class="card-divider"></div>
-            <p>自 2024.05.20 起</p>
+            <p>自 2018.04.05 起</p>
           </div>
           <div class="floating-note note-top">永远对彼此好奇 ✦</div>
           <div class="floating-note note-bottom">下一纪念日 · {{ nextAnniversary }} 天</div>
@@ -135,38 +164,41 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section class="promise section-pad" aria-label="爱情寄语">
+      <section class="promise section-pad" aria-label="爱情寄语" data-reveal>
         <p>“世界很大，幸福很小。有你在身边，刚刚好。”</p>
         <span>OUR LITTLE UNIVERSE</span>
       </section>
 
       <section id="story" class="story section-pad">
-        <div class="section-heading">
+        <div class="section-heading" data-reveal>
           <div>
-            <p class="eyebrow"><span></span> OUR STORY</p>
-            <h2>时间把喜欢，<br />写成了日常。</h2>
+            <p class="eyebrow"><span></span> OUR TIMELINE</p>
+            <h2>从相识开始，<br />一路写到今天。</h2>
           </div>
-          <p class="section-intro">不追求轰轰烈烈，只想把每一个值得记住的片刻，好好放在这里。</p>
+          <p class="section-intro">只用 ZZ 与 YY 两个代号，收藏那些值得记住的日期、城市与共同经历。</p>
         </div>
 
-        <div class="timeline">
-          <article v-for="(memory, index) in memories" :key="memory.date" class="memory-card">
-            <div :class="['memory-art', `tone-${memory.tone}`]">
-              <img v-if="memory.image" :src="memory.image" :alt="memory.title" />
-              <div class="memory-number">0{{ index + 1 }}</div>
-              <span v-if="!memory.image" class="memory-symbol">{{ index === 0 ? '♡' : '∞' }}</span>
-            </div>
-            <div class="memory-copy">
-              <time>{{ memory.date }}</time>
-              <h3>{{ memory.title }}</h3>
-              <p>{{ memory.description }}</p>
-            </div>
-          </article>
+        <div data-reveal>
+          <LoveTimeline />
+        </div>
+      </section>
+
+      <section id="footprints" class="footprints section-pad">
+        <div class="section-heading map-heading" data-reveal>
+          <div>
+            <p class="eyebrow blue"><span></span> OUR FOOTPRINTS</p>
+            <h2>走过的城市，<br />拼成一张地图。</h2>
+          </div>
+          <p class="section-intro">地图仅使用城市中心点进行可视化，不保存精确坐标、住址或实时行动轨迹。</p>
+        </div>
+
+        <div data-reveal>
+          <FootprintMap />
         </div>
       </section>
 
       <section id="wishlist" class="wishlist section-pad">
-        <div class="wish-copy">
+        <div class="wish-copy" data-reveal>
           <p class="eyebrow light"><span></span> OUR WISH LIST</p>
           <h2>还有好多以后，<br />想和你一起。</h2>
           <p>愿望不必宏大。只要在实现它们的时候，身边的人还是你。</p>
@@ -175,7 +207,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div class="wish-list">
+        <div class="wish-list" data-reveal>
           <button type="button" @click="showToast('一起去看海，约定好了！')">
             <span>01</span><strong>去一座陌生的海边城市</strong><i>↗</i>
           </button>
@@ -192,8 +224,10 @@ onBeforeUnmount(() => {
     <footer class="footer section-pad">
       <span class="footer-heart">♡</span>
       <p>Made with love, for YY & ZZ.</p>
-      <span>© {{ now.getFullYear() }} · 我们的爱情空间</span>
+      <span>© 2017—{{ now.getFullYear() }}—∞ · 我们的爱情空间</span>
     </footer>
+
+    <Backtop />
 
     <Transition name="fade">
       <div v-if="noteOpen" class="modal-backdrop" role="presentation" @click.self="noteOpen = false">
@@ -224,24 +258,72 @@ onBeforeUnmount(() => {
   background: #f8f4ed;
   font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: color .35s ease, background .35s ease;
 }
+:global(html[data-theme="dark"] body) { color: #e8e2dc; background: #11171d; }
 :global(button) { font: inherit; }
+:global(button:focus-visible) { outline: 2px solid currentColor; outline-offset: 3px; }
 
-.site-shell { min-height: 100vh; overflow: hidden; }
+.site-shell {
+  --page-bg: #f8f4ed;
+  --text-main: #302725;
+  --text-muted: #7a6964;
+  --surface-story: #fbf8f3;
+  --surface-map: #f0f5f7;
+  --surface-footer: #f2ebe3;
+  --line-color: #e4d9d1;
+  --blue: #527b9d;
+  --blue-deep: #365d7e;
+  --red: #b8514a;
+  --map-canvas: #e9f0f4;
+  --map-country: #d4e0e7;
+  --map-stroke: #f5f1eb;
+  --photo-surface: #efe7df;
+  --backtop-bg: #365d7e;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--text-main);
+  background: var(--page-bg);
+  transition: color .35s ease, background .35s ease;
+}
+.site-shell.theme-dark {
+  --page-bg: #11171d;
+  --text-main: #e8e2dc;
+  --text-muted: #a9a29d;
+  --surface-story: #171e24;
+  --surface-map: #121d25;
+  --surface-footer: #10161b;
+  --line-color: #33414b;
+  --blue: #7ea9c8;
+  --blue-deep: #345f7e;
+  --red: #d4746e;
+  --map-canvas: #1a2933;
+  --map-country: #293d4a;
+  --map-stroke: #17232c;
+  --photo-surface: #222c33;
+  --backtop-bg: #b85f5a;
+}
 .section-pad { padding-left: clamp(24px, 7vw, 112px); padding-right: clamp(24px, 7vw, 112px); }
 .topbar {
-  position: absolute; z-index: 20; top: 0; left: 0; width: 100%; height: 104px;
+  position: fixed; z-index: 30; top: 0; left: 0; width: 100%; height: 104px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 clamp(24px, 7vw, 112px); border-bottom: 1px solid rgba(70, 49, 43, .09);
+  padding: 0 clamp(24px, 7vw, 112px);
+  border-bottom: 1px solid transparent;
+  background: rgba(248, 244, 237, .7);
+  backdrop-filter: blur(18px) saturate(1.25);
+  transition: height .3s ease, background .35s ease, border-color .35s ease, box-shadow .35s ease;
 }
+.topbar.scrolled { height: 78px; border-color: rgba(70, 49, 43, .1); background: rgba(248, 244, 237, .9); box-shadow: 0 8px 30px rgba(61, 43, 37, .07); }
 .brand { display: flex; align-items: center; gap: 14px; color: inherit; border: 0; background: none; cursor: pointer; }
-.brand-mark { font-family: "DM Serif Display", Georgia, serif; font-size: 29px; letter-spacing: -.08em; }
+.brand-mark { font-family: "DM Serif Display", Georgia, serif; font-size: 27px; letter-spacing: -.05em; }
 .brand-mark span { color: #b8514a; font-size: 21px; margin: 0 3px; }
 .brand-copy { font-family: "Noto Serif SC", serif; font-size: 13px; letter-spacing: .2em; }
 .nav { display: flex; align-items: center; gap: clamp(22px, 3vw, 44px); }
 .nav button { color: #5b4a45; border: 0; background: none; font-size: 14px; cursor: pointer; transition: color .2s ease; }
 .nav button:hover { color: #b8514a; }
-.nav .nav-pill { padding: 11px 21px; color: #fff; background: #4f6b5a; border-radius: 999px; }
+.nav .nav-pill { padding: 11px 21px; color: #fff; background: #365d7e; border-radius: 999px; }
+.nav .theme-toggle { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; color: #365d7e; border: 1px solid rgba(54, 93, 126, .24); border-radius: 50%; font-size: 18px; transition: color .25s ease, border-color .25s ease, transform .25s ease, background .25s ease; }
+.nav .theme-toggle:hover { color: #fff; border-color: #365d7e; background: #365d7e; transform: rotate(12deg); }
 .menu-toggle { display: none; width: 42px; height: 42px; border: 0; background: transparent; }
 .menu-toggle span { display: block; width: 22px; height: 1px; margin: 7px auto; background: #342a28; }
 
@@ -291,28 +373,17 @@ h1, h2, h3, p { margin-top: 0; }
 .spark-one { top: 60px; left: 10%; font-size: 22px; }
 .spark-two { right: 7%; bottom: 67px; font-size: 13px; }
 
-.promise { min-height: 235px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f7eee8; text-align: center; background: #4f6b5a; }
+.promise { min-height: 235px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f4f8fb; text-align: center; background: #365d7e; }
 .promise p { margin-bottom: 24px; font-family: "Noto Serif SC", serif; font-size: clamp(20px, 2.5vw, 32px); letter-spacing: .06em; }
 .promise span { color: rgba(255,255,255,.52); font-size: 9px; letter-spacing: .34em; }
 
 .story { padding-top: 120px; padding-bottom: 130px; background: #fbf8f3; }
-.section-heading { display: grid; grid-template-columns: 1fr .72fr; align-items: end; gap: 12vw; margin-bottom: 72px; }
+.section-heading { display: grid; grid-template-columns: 1fr .72fr; align-items: end; gap: 12vw; margin-bottom: 0; }
 .section-heading h2, .wish-copy h2 { margin-bottom: 0; font-size: clamp(38px, 4.2vw, 62px); }
 .section-intro { max-width: 380px; margin-bottom: 8px; color: #86746f; line-height: 1.9; }
-.timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.memory-card { min-width: 0; }
-.memory-art { position: relative; aspect-ratio: 1.18; overflow: hidden; border-radius: 3px; }
-.memory-art img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.75) sepia(.12); transition: transform .5s ease; }
-.memory-card:hover img { transform: scale(1.035); }
-.tone-rose { background: linear-gradient(135deg, #ddb0a5, #a84d49); }
-.tone-amber { background: #d0a474; }
-.tone-sage { background: linear-gradient(145deg, #aab9a5, #52705e); }
-.memory-number { position: absolute; top: 18px; left: 20px; color: rgba(255,255,255,.8); font-family: Georgia, serif; font-size: 13px; letter-spacing: .12em; }
-.memory-symbol { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.78); font-family: Georgia, serif; font-size: 82px; font-weight: 300; }
-.memory-copy { padding: 25px 4px; }
-.memory-copy time { color: #b17b70; font-size: 10px; font-weight: 700; letter-spacing: .2em; }
-.memory-copy h3 { margin: 12px 0 11px; font-family: "Noto Serif SC", serif; font-size: 21px; font-weight: 600; }
-.memory-copy p { margin: 0; color: #887670; font-size: 14px; line-height: 1.8; }
+.footprints { padding-top: 120px; padding-bottom: 130px; background: #f0f5f7; }
+.eyebrow.blue { color: #527b9d; }
+.map-heading .section-intro { color: #6f818c; }
 
 .wishlist { min-height: 570px; padding-top: 100px; padding-bottom: 100px; display: grid; grid-template-columns: .8fr 1.2fr; gap: 10vw; color: #f7eee8; background: #aa514c; }
 .eyebrow.light { color: #edc7bd; }
@@ -339,10 +410,95 @@ h1, h2, h3, p { margin-top: 0; }
 .love-letter p { color: #776660; line-height: 2; }
 .love-letter strong { display: block; margin-top: 30px; color: #a34c47; text-align: right; font-family: "Noto Serif SC", serif; font-weight: 600; }
 .modal-close { position: absolute; z-index: 2; top: 20px; right: 22px; width: 34px; height: 34px; color: #7f6b65; border: 0; background: none; font-size: 27px; cursor: pointer; }
-.toast-message { position: fixed; z-index: 60; left: 50%; bottom: 34px; padding: 13px 22px; color: #fff; background: #3f5046; border-radius: 999px; box-shadow: 0 10px 35px rgba(0,0,0,.16); font-size: 13px; transform: translateX(-50%); }
+.toast-message { position: fixed; z-index: 60; left: 50%; bottom: 34px; padding: 13px 22px; color: #fff; background: #365d7e; border-radius: 999px; box-shadow: 0 10px 35px rgba(0,0,0,.16); font-size: 13px; transform: translateX(-50%); }
 .fade-enter-active, .fade-leave-active, .toast-enter-active, .toast-leave-active { transition: opacity .25s ease, transform .25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 12px); }
+
+main section[id] { scroll-margin-top: 78px; }
+.hero-copy > * { animation: rise-in .75s cubic-bezier(.2, .7, .2, 1) both; }
+.hero-copy > :nth-child(2) { animation-delay: .08s; }
+.hero-copy > :nth-child(3) { animation-delay: .16s; }
+.hero-copy > :nth-child(4) { animation-delay: .24s; }
+.hero-visual { animation: rise-in .9s .18s cubic-bezier(.2, .7, .2, 1) both; }
+.love-card { animation: card-float 6s ease-in-out infinite; }
+.orbit-one { animation: orbit-spin 28s linear infinite; }
+.orbit-one::after {
+  content: "";
+  position: absolute;
+  top: 42px;
+  left: 48px;
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(184, 81, 74, .1);
+}
+.orbit-two { animation: orbit-breathe 8s ease-in-out infinite; }
+.floating-note { animation: note-drift 5s ease-in-out infinite; }
+.note-bottom { animation-delay: -2.5s; }
+.spark { animation: sparkle 2.8s ease-in-out infinite; }
+.spark-two { animation-delay: -1.4s; }
+[data-reveal] { opacity: 0; transform: translateY(24px); transition: opacity .75s ease, transform .75s cubic-bezier(.2, .7, .2, 1); }
+[data-reveal].is-visible { opacity: 1; transform: translateY(0); }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes card-float {
+  0%, 100% { transform: rotate(2deg) translateY(0); }
+  50% { transform: rotate(1deg) translateY(-9px); }
+}
+@keyframes orbit-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes orbit-breathe {
+  0%, 100% { transform: rotate(-24deg) scale(1); }
+  50% { transform: rotate(-20deg) scale(1.025); }
+}
+@keyframes note-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes sparkle {
+  0%, 100% { opacity: .35; transform: scale(.8) rotate(0); }
+  50% { opacity: 1; transform: scale(1.15) rotate(15deg); }
+}
+
+.theme-dark .topbar { background: rgba(17, 23, 29, .7); }
+.theme-dark .topbar.scrolled { border-color: rgba(255, 255, 255, .08); background: rgba(17, 23, 29, .92); box-shadow: 0 8px 34px rgba(0, 0, 0, .24); }
+.theme-dark .brand-mark span,
+.theme-dark .nav button:hover,
+.theme-dark .hero h1 em,
+.theme-dark .footer-heart { color: #d4746e; }
+.theme-dark .nav button { color: #c9c3bd; }
+.theme-dark .nav .nav-pill { color: #fff; background: #b85f5a; }
+.theme-dark .nav .theme-toggle { color: #e5c285; border-color: rgba(229, 194, 133, .34); }
+.theme-dark .nav .theme-toggle:hover { color: #11171d; border-color: #e5c285; background: #e5c285; }
+.theme-dark .menu-toggle span { background: #e8e2dc; }
+.theme-dark .hero {
+  background:
+    radial-gradient(circle at 83% 10%, rgba(158, 73, 70, .2), transparent 27%),
+    linear-gradient(115deg, #11171d 0 58%, #18232c 58% 100%);
+}
+.theme-dark .hero::before { border-color: rgba(212, 116, 110, .18); }
+.theme-dark .eyebrow { color: #c4867e; }
+.theme-dark .hero-description,
+.theme-dark .section-intro { color: #aaa29d; }
+.theme-dark .text-button { color: #d1c9c3; border-color: #755955; }
+.theme-dark .orbit { border-color: rgba(176, 199, 215, .16); }
+.theme-dark .floating-note { color: #d9d2cc; border-color: rgba(255, 255, 255, .08); background: rgba(31, 42, 51, .82); box-shadow: 0 12px 30px rgba(0, 0, 0, .2); }
+.theme-dark .promise { color: #eef4f7; background: #263f52; }
+.theme-dark .story { background: var(--surface-story); }
+.theme-dark .footprints { background: var(--surface-map); }
+.theme-dark .wishlist { color: #fbf1ed; background: #713d42; }
+.theme-dark .footer { color: #aaa29d; background: var(--surface-footer); }
+.theme-dark .love-letter { color: #ded6d0; background: #20272c; box-shadow: 0 30px 90px rgba(0, 0, 0, .5); }
+.theme-dark .love-letter::before { border-color: #46515a; }
+.theme-dark .love-letter p { color: #b9b1ab; }
+.theme-dark .modal-close { color: #c4bbb4; }
+.theme-dark .toast-message { background: #b85f5a; }
 
 @media (max-width: 900px) {
   .topbar { height: 82px; }
@@ -352,12 +508,12 @@ h1, h2, h3, p { margin-top: 0; }
   .nav.open { display: flex; }
   .nav button { padding: 12px 14px; text-align: left; }
   .nav .nav-pill { margin-top: 5px; text-align: center; }
+  .nav .theme-toggle { width: 100%; height: 42px; margin-top: 5px; border-radius: 999px; }
+  .theme-dark .nav { border-color: rgba(255,255,255,.08); background: rgba(24, 32, 39, .98); box-shadow: 0 18px 45px rgba(0,0,0,.3); }
   .hero { min-height: auto; padding-top: 130px; grid-template-columns: 1fr; gap: 55px; background: radial-gradient(circle at 90% 6%, rgba(230,181,167,.33), transparent 26%), #f8f4ed; }
-  .hero-copy { text-align: center; }
+.hero-copy { text-align: center; }
   .eyebrow, .hero-actions { justify-content: center; }
   .hero-visual { min-height: 480px; }
-  .timeline { grid-template-columns: 1fr 1fr; }
-  .memory-card:last-child { grid-column: 1 / -1; max-width: calc(50% - 12px); }
   .wishlist { grid-template-columns: 1fr; gap: 55px; }
   .wish-copy { text-align: center; }
   .wish-copy .eyebrow { justify-content: center; }
@@ -379,10 +535,9 @@ h1, h2, h3, p { margin-top: 0; }
   .note-bottom { left: -5px; bottom: 38px; }
   .promise { min-height: 190px; }
   .story { padding-top: 82px; padding-bottom: 85px; }
-  .section-heading { grid-template-columns: 1fr; gap: 26px; margin-bottom: 48px; }
+  .section-heading { grid-template-columns: 1fr; gap: 26px; }
   .section-heading h2, .wish-copy h2 { font-size: 38px; }
-  .timeline { grid-template-columns: 1fr; gap: 10px; }
-  .memory-card:last-child { grid-column: auto; max-width: none; }
+  .footprints { padding-top: 82px; padding-bottom: 85px; }
   .wishlist { padding-top: 80px; padding-bottom: 80px; }
   .wish-list button { grid-template-columns: 34px 1fr auto; gap: 10px; }
   .footer { padding-top: 42px; padding-bottom: 42px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
@@ -392,5 +547,7 @@ h1, h2, h3, p { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   :global(html) { scroll-behavior: auto; }
   * { transition: none !important; }
+  .hero-copy > *, .hero-visual, .love-card, .orbit-one, .orbit-two, .floating-note, .spark { animation: none !important; }
+  [data-reveal] { opacity: 1; transform: none; }
 }
 </style>

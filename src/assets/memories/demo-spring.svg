@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">春日公园抽象风景</title>
+  <desc id="desc">暖粉天空、蓝色远山与湖面的抽象插画，不包含人物信息。</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f2c9c1"/><stop offset=".55" stop-color="#f8e4d7"/><stop offset="1" stop-color="#c4d7e2"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8faec3"/><stop offset="1" stop-color="#365d7e"/></linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#sky)"/>
+  <circle cx="900" cy="185" r="72" fill="#fff4dc" opacity=".8"/>
+  <path d="M0 410 170 300l165 86 170-132 198 150 174-108 323 136v318H0Z" fill="#718da0" opacity=".7"/>
+  <path d="M0 450c190-80 340-28 510 1 232 39 422-87 690 4v295H0Z" fill="url(#water)"/>
+  <path d="M0 535c185-48 302 36 474 13 225-30 421-92 726-22" fill="none" stroke="#d8e4e8" stroke-width="8" opacity=".5"/>
+  <g fill="#b8514a" opacity=".82"><circle cx="180" cy="340" r="16"/><circle cx="218" cy="325" r="12"/><circle cx="1040" cy="365" r="14"/></g>
+</svg>
