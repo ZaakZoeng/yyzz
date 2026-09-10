@@ -26,25 +26,27 @@ export type CityCoordinate = {
   city: string;
   longitude: number;
   latitude: number;
+  country: string;
+  continent: string;
 };
 
 // 公开页面仅保存城市级信息，不记录住址、实时位置或精确行动轨迹。
 export const cityCoordinates: CityCoordinate[] = [
-  { city: "北京", longitude: 116.407, latitude: 39.904 },
-  { city: "邢台", longitude: 114.505, latitude: 37.07 },
-  { city: "邯郸", longitude: 114.539, latitude: 36.625 },
-  { city: "郑州", longitude: 113.625, latitude: 34.746 },
-  { city: "开封", longitude: 114.307, latitude: 34.797 },
-  { city: "常州", longitude: 119.974, latitude: 31.811 },
-  { city: "杭州", longitude: 120.155, latitude: 30.274 },
-  { city: "武汉", longitude: 114.305, latitude: 30.592 },
-  { city: "南昌", longitude: 115.858, latitude: 28.683 },
-  { city: "长沙", longitude: 112.938, latitude: 28.228 },
-  { city: "深圳", longitude: 114.058, latitude: 22.543 },
-  { city: "香港", longitude: 114.169, latitude: 22.319 },
-  { city: "海口", longitude: 110.199, latitude: 20.044 },
-  { city: "文昌", longitude: 110.797, latitude: 19.544 },
-  { city: "琼海", longitude: 110.474, latitude: 19.259 },
+  { city: "北京", longitude: 116.407, latitude: 39.904, country: "中国", continent: "亚洲" },
+  { city: "邢台", longitude: 114.505, latitude: 37.07, country: "中国", continent: "亚洲" },
+  { city: "邯郸", longitude: 114.539, latitude: 36.625, country: "中国", continent: "亚洲" },
+  { city: "郑州", longitude: 113.625, latitude: 34.746, country: "中国", continent: "亚洲" },
+  { city: "开封", longitude: 114.307, latitude: 34.797, country: "中国", continent: "亚洲" },
+  { city: "常州", longitude: 119.974, latitude: 31.811, country: "中国", continent: "亚洲" },
+  { city: "杭州", longitude: 120.155, latitude: 30.274, country: "中国", continent: "亚洲" },
+  { city: "武汉", longitude: 114.305, latitude: 30.592, country: "中国", continent: "亚洲" },
+  { city: "南昌", longitude: 115.858, latitude: 28.683, country: "中国", continent: "亚洲" },
+  { city: "长沙", longitude: 112.938, latitude: 28.228, country: "中国", continent: "亚洲" },
+  { city: "深圳", longitude: 114.058, latitude: 22.543, country: "中国", continent: "亚洲" },
+  { city: "香港", longitude: 114.169, latitude: 22.319, country: "中国", continent: "亚洲" },
+  { city: "海口", longitude: 110.199, latitude: 20.044, country: "中国", continent: "亚洲" },
+  { city: "文昌", longitude: 110.797, latitude: 19.544, country: "中国", continent: "亚洲" },
+  { city: "琼海", longitude: 110.474, latitude: 19.259, country: "中国", continent: "亚洲" },
 ];
 
 export const journeyMemories: JourneyMemory[] = [
@@ -150,3 +152,15 @@ export const journeyMemories: JourneyMemory[] = [
   { date: "2026-09-03", displayDate: "2026.09.03", title: "古都漫游", city: "开封", kind: "旅行" },
   { date: "2026-09-05", displayDate: "2026.09.05", title: "旅程的下一站", city: "邯郸", kind: "旅行", featured: true },
 ];
+
+const visitedCityNames = new Set(journeyMemories.map((memory) => memory.city));
+const visitedLocations = cityCoordinates.filter((location) => visitedCityNames.has(location.city));
+
+// 足迹统计始终由爱情点滴数据派生；新增点滴后，城市、年份和时刻会自动更新。
+export const journeyStats = {
+  cities: visitedCityNames.size,
+  moments: journeyMemories.length,
+  years: new Set(journeyMemories.map((memory) => memory.date.slice(0, 4))).size,
+  countries: new Set(visitedLocations.map((location) => location.country)).size,
+  continents: new Set(visitedLocations.map((location) => location.continent)).size,
+};

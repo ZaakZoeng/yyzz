@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import Backtop from "./components/Backtop.vue";
 import FootprintMap from "./components/FootprintMap.vue";
 import LoveTimeline from "./components/LoveTimeline.vue";
+import VowBarrage from "./components/VowBarrage.vue";
+import VowDetail from "./components/VowDetail.vue";
+import { journeyStats } from "./data/journey";
+import { vowPosts } from "./data/vows";
 
 type ColorTheme = "light" | "dark";
 
@@ -10,12 +14,15 @@ const relationshipStartedAt = new Date("2018-04-05T00:00:00+08:00");
 const now = ref(new Date());
 const menuOpen = ref(false);
 const noteOpen = ref(false);
-const toast = ref("");
 const theme = ref<ColorTheme>("light");
 const headerScrolled = ref(false);
+const currentVowSlug = ref("");
 let clock: number | undefined;
-let toastTimer: number | undefined;
 let revealObserver: IntersectionObserver | undefined;
+
+const selectedVow = computed(() =>
+  vowPosts.find((vow) => vow.slug === currentVowSlug.value),
+);
 
 const dayCount = computed(() => {
   const elapsed = now.value.getTime() - relationshipStartedAt.getTime();
@@ -40,15 +47,45 @@ const nextAnniversary = computed(() => {
   return Math.ceil((target.getTime() - now.value.getTime()) / 86_400_000);
 });
 
-function scrollToSection(id: string) {
+async function scrollToSection(id: string) {
+  if (currentVowSlug.value) {
+    window.location.hash = "";
+    currentVowSlug.value = "";
+    await nextTick();
+    setupRevealTargets();
+  }
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   menuOpen.value = false;
 }
 
-function showToast(message: string) {
-  toast.value = message;
-  window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => (toast.value = ""), 2400);
+function setupRevealTargets() {
+  revealObserver?.disconnect();
+  const revealTargets = document.querySelectorAll<HTMLElement>("[data-reveal]");
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    revealTargets.forEach((target) => target.classList.add("is-visible"));
+    return;
+  }
+
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          revealObserver?.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.12 },
+  );
+  revealTargets.forEach((target) => revealObserver?.observe(target));
+}
+
+function handleHashChange() {
+  const match = window.location.hash.match(/^#\/vows\/([^/?]+)/);
+  currentVowSlug.value = match ? decodeURIComponent(match[1]) : "";
+  menuOpen.value = false;
+  window.scrollTo({ top: 0 });
+  void nextTick(setupRevealTargets);
 }
 
 function applyTheme(nextTheme: ColorTheme) {
@@ -74,31 +111,15 @@ onMounted(() => {
   applyTheme(savedTheme === "dark" ? "dark" : "light");
   clock = window.setInterval(() => (now.value = new Date()), 1_000);
   handleScroll();
+  handleHashChange();
   window.addEventListener("scroll", handleScroll, { passive: true });
-
-  const revealTargets = document.querySelectorAll<HTMLElement>("[data-reveal]");
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    revealTargets.forEach((target) => target.classList.add("is-visible"));
-  } else {
-    revealObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            revealObserver?.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12 },
-    );
-    revealTargets.forEach((target) => revealObserver?.observe(target));
-  }
+  window.addEventListener("hashchange", handleHashChange);
 });
 
 onBeforeUnmount(() => {
   window.clearInterval(clock);
-  window.clearTimeout(toastTimer);
   window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("hashchange", handleHashChange);
   revealObserver?.disconnect();
 });
 </script>
@@ -125,7 +146,7 @@ onBeforeUnmount(() => {
         <button type="button" @click="scrollToSection('home')">首页</button>
         <button type="button" @click="scrollToSection('story')">爱情点滴</button>
         <button type="button" @click="scrollToSection('footprints')">足迹地图</button>
-        <button type="button" @click="scrollToSection('wishlist')">小小愿望</button>
+        <button type="button" @click="scrollToSection('vows')">还愿清单</button>
         <button
           class="theme-toggle"
           type="button"
@@ -139,7 +160,7 @@ onBeforeUnmount(() => {
       </nav>
     </header>
 
-    <main>
+    <main v-if="!currentVowSlug">
       <section id="home" class="hero section-pad">
         <div class="hero-copy">
           <p class="eyebrow"><span></span> YY & ZZ · LOVE SPACE</p>
@@ -207,7 +228,13 @@ onBeforeUnmount(() => {
             <p class="eyebrow blue"><span></span> OUR FOOTPRINTS</p>
             <h2>走过的城市，<br />拼成一张地图。</h2>
           </div>
-          <p class="section-intro">地图仅使用城市中心点进行可视化，不保存精确坐标、住址或实时行动轨迹。</p>
+          <div class="footprint-stats" aria-label="爱情足迹统计">
+            <div><strong>{{ journeyStats.continents }}</strong><span>大洲</span></div>
+            <div><strong>{{ journeyStats.countries }}</strong><span>国家</span></div>
+            <div><strong>{{ journeyStats.cities }}</strong><span>城市</span></div>
+            <div><strong>{{ journeyStats.moments }}</strong><span>时刻</span></div>
+            <div><strong>{{ journeyStats.years }}</strong><span>年份</span></div>
+          </div>
         </div>
 
         <div data-reveal>
@@ -215,32 +242,36 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section id="wishlist" class="wishlist section-pad">
-        <div class="wish-copy" data-reveal>
-          <p class="eyebrow light"><span></span> OUR WISH LIST</p>
-          <h2>还有好多以后，<br />想和你一起。</h2>
-          <p>愿望不必宏大。只要在实现它们的时候，身边的人还是你。</p>
-          <button class="outline-button" type="button" @click="showToast('新的愿望，已经替你留好位置啦 ♡')">
-            + 添加一个愿望
-          </button>
+      <section id="vows" class="vow-section section-pad">
+        <div class="vow-copy" data-reveal>
+          <p class="eyebrow light"><span></span> OUR VOW LIST</p>
+          <h2>还有好多以后，<br />想和你一起实现。</h2>
+          <p>每一条移动的愿望，都是一篇可以慢慢读完的记录。点击它，看看我们写下的约定。</p>
         </div>
 
-        <div class="wish-list" data-reveal>
-          <button type="button" @click="showToast('一起去看海，约定好了！')">
-            <span>01</span><strong>去一座陌生的海边城市</strong><i>↗</i>
-          </button>
-          <button type="button" @click="showToast('今年也要记得多拍照片。')">
-            <span>02</span><strong>拍满一本属于我们的相册</strong><i>↗</i>
-          </button>
-          <button type="button" @click="showToast('把家布置成喜欢的样子。')">
-            <span>03</span><strong>拥有一间阳光很好的小屋</strong><i>↗</i>
-          </button>
+        <div class="vow-barrage-wrap" data-reveal>
+          <VowBarrage />
         </div>
       </section>
     </main>
 
+    <VowDetail v-else :vow="selectedVow" />
+
     <footer class="footer section-pad">
-      <span class="footer-heart">♡</span>
+      <a
+        class="footer-counter"
+        href="https://info.flagcounter.com/TSBZ"
+        target="_blank"
+        rel="nofollow noreferrer"
+        title="查看匿名访客国家与访问量统计"
+      >
+        <img
+          src="https://s01.flagcounter.com/map/TSBZ/size_s/txt_365D7E/border_D5DEE5/pageviews_1/viewers_0/flags_0/"
+          alt="Flag Counter 匿名访客统计"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        />
+      </a>
       <p>Made with love, for YY & ZZ.</p>
       <span>© 2017—{{ now.getFullYear() }}—∞ · 我们的爱情空间</span>
     </footer>
@@ -258,10 +289,6 @@ onBeforeUnmount(() => {
           <strong>爱你的人，ZZ ♡</strong>
         </article>
       </div>
-    </Transition>
-
-    <Transition name="toast">
-      <div v-if="toast" class="toast-message">{{ toast }}</div>
     </Transition>
   </div>
 </template>
@@ -356,17 +383,17 @@ onBeforeUnmount(() => {
 .eyebrow { display: flex; align-items: center; gap: 11px; margin: 0 0 25px; color: #9c6a60; font-size: 11px; font-weight: 700; letter-spacing: .24em; }
 .eyebrow span { width: 34px; height: 1px; background: currentColor; }
 h1, h2, h3, p { margin-top: 0; }
-.hero h1, .section-heading h2, .wish-copy h2 {
+.hero h1, .section-heading h2, .vow-copy h2 {
   margin-bottom: 28px; font-family: "Noto Serif SC", "Songti SC", serif; font-size: clamp(46px, 5.2vw, 78px);
   line-height: 1.22; letter-spacing: -.06em; font-weight: 600;
 }
 .hero h1 em { color: #b8514a; font-style: normal; }
 .hero-description { color: #7a6964; font-size: 16px; line-height: 2; }
 .hero-actions { display: flex; align-items: center; gap: 32px; margin-top: 42px; }
-.primary-button, .outline-button { padding: 15px 25px; border-radius: 999px; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+.primary-button { padding: 15px 25px; border-radius: 999px; cursor: pointer; transition: transform .2s ease, background .2s ease; }
 .primary-button { color: #fff; border: 1px solid #b8514a; background: #b8514a; box-shadow: 0 12px 30px rgba(184, 81, 74, .18); }
 .primary-button span { margin-left: 12px; }
-.primary-button:hover, .outline-button:hover { transform: translateY(-2px); }
+.primary-button:hover { transform: translateY(-2px); }
 .text-button { padding: 8px 0; color: #5d4d48; border: 0; border-bottom: 1px solid #c6a39c; background: none; cursor: pointer; }
 .hero-visual { position: relative; min-height: 500px; display: grid; place-items: center; }
 .love-card {
@@ -401,28 +428,28 @@ h1, h2, h3, p { margin-top: 0; }
 
 .story { padding-top: 120px; padding-bottom: 130px; background: #fbf8f3; }
 .section-heading { display: grid; grid-template-columns: 1fr .72fr; align-items: end; gap: 12vw; margin-bottom: 0; }
-.section-heading h2, .wish-copy h2 { margin-bottom: 0; font-size: clamp(38px, 4.2vw, 62px); }
+.section-heading h2, .vow-copy h2 { margin-bottom: 0; font-size: clamp(38px, 4.2vw, 62px); }
 .section-intro { max-width: 380px; margin-bottom: 8px; color: #86746f; line-height: 1.9; }
 .footprints { padding-top: 120px; padding-bottom: 130px; background: #f0f5f7; }
 .eyebrow.blue { color: #527b9d; }
 .map-heading .section-intro { color: #6f818c; }
+.footprint-stats { display: grid; grid-template-columns: repeat(5, minmax(58px, 1fr)); align-self: end; min-width: min(100%, 500px); border-top: 1px solid color-mix(in srgb, var(--blue, #527b9d) 34%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--blue, #527b9d) 22%, transparent); }
+.footprint-stats div { min-width: 0; padding: 17px 10px 15px; text-align: center; border-right: 1px solid color-mix(in srgb, var(--blue, #527b9d) 18%, transparent); }
+.footprint-stats div:last-child { border-right: 0; }
+.footprint-stats strong { display: block; color: var(--blue-deep, #365d7e); font-family: "DM Serif Display", Georgia, serif; font-size: clamp(25px, 2.4vw, 36px); font-weight: 400; line-height: 1; }
+.footprint-stats span { display: block; margin-top: 7px; color: var(--text-muted, #6f818c); font-size: 10px; letter-spacing: .12em; }
 
-.wishlist { min-height: 570px; padding-top: 100px; padding-bottom: 100px; display: grid; grid-template-columns: .8fr 1.2fr; gap: 10vw; color: #f7eee8; background: #aa514c; }
+.vow-section { min-height: 570px; padding-top: 100px; padding-bottom: 100px; display: grid; grid-template-columns: .72fr 1.28fr; align-items: center; gap: clamp(50px, 8vw, 120px); color: #f7eee8; background: #aa514c; }
 .eyebrow.light { color: #edc7bd; }
-.wish-copy > p:not(.eyebrow) { max-width: 420px; color: rgba(255,255,255,.7); line-height: 1.9; }
-.outline-button { margin-top: 25px; color: #fff; border: 1px solid rgba(255,255,255,.46); background: transparent; }
-.outline-button:hover { background: rgba(255,255,255,.08); }
-.wish-list { align-self: center; border-top: 1px solid rgba(255,255,255,.22); }
-.wish-list button { width: 100%; padding: 28px 4px; display: grid; grid-template-columns: 50px 1fr auto; align-items: center; gap: 18px; color: inherit; text-align: left; border: 0; border-bottom: 1px solid rgba(255,255,255,.22); background: transparent; cursor: pointer; }
-.wish-list span { color: rgba(255,255,255,.45); font-size: 11px; }
-.wish-list strong { font-family: "Noto Serif SC", serif; font-size: clamp(16px, 1.5vw, 21px); font-weight: 500; }
-.wish-list i { font-size: 20px; font-style: normal; transition: transform .2s ease; }
-.wish-list button:hover i { transform: translate(3px, -3px); }
+.vow-copy h2 { font-size: clamp(38px, 3.65vw, 56px); letter-spacing: -.04em; }
+.vow-copy > p:not(.eyebrow) { max-width: 420px; margin-top: 30px; color: rgba(255,255,255,.72); line-height: 1.9; }
+.vow-barrage-wrap { min-width: 0; width: 100%; }
 
 .footer { min-height: 180px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; color: #796963; background: #f2ebe3; font-size: 12px; }
 .footer p { margin: 0; font-family: Georgia, serif; font-style: italic; }
 .footer > span:last-child { text-align: right; }
-.footer-heart { color: #b8514a; font-family: Georgia, serif; font-size: 32px; }
+.footer-counter { justify-self: start; display: block; padding: 5px; overflow: hidden; background: rgba(255,255,255,.7); border: 1px solid rgba(54,93,126,.15); border-radius: 8px; }
+.footer-counter img { display: block; max-width: 170px; height: auto; border: 0; }
 
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; padding: 24px; display: grid; place-items: center; background: rgba(38, 29, 27, .54); backdrop-filter: blur(6px); }
 .love-letter { position: relative; width: min(520px, 100%); padding: clamp(38px, 7vw, 70px); color: #463733; background: #fffaf3; box-shadow: 0 30px 90px rgba(31,20,18,.25); transform: rotate(-1deg); }
@@ -432,10 +459,8 @@ h1, h2, h3, p { margin-top: 0; }
 .love-letter p { color: #776660; line-height: 2; }
 .love-letter strong { display: block; margin-top: 30px; color: #a34c47; text-align: right; font-family: "Noto Serif SC", serif; font-weight: 600; }
 .modal-close { position: absolute; z-index: 2; top: 20px; right: 22px; width: 34px; height: 34px; color: #7f6b65; border: 0; background: none; font-size: 27px; cursor: pointer; }
-.toast-message { position: fixed; z-index: 60; left: 50%; bottom: 34px; padding: 13px 22px; color: #fff; background: #365d7e; border-radius: 999px; box-shadow: 0 10px 35px rgba(0,0,0,.16); font-size: 13px; transform: translateX(-50%); }
-.fade-enter-active, .fade-leave-active, .toast-enter-active, .toast-leave-active { transition: opacity .25s ease, transform .25s ease; }
+.fade-enter-active, .fade-leave-active { transition: opacity .25s ease, transform .25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 12px); }
 
 main section[id] { scroll-margin-top: 78px; }
 .hero-copy > * { animation: rise-in .75s cubic-bezier(.2, .7, .2, 1) both; }
@@ -495,8 +520,7 @@ main section[id] { scroll-margin-top: 78px; }
 .theme-dark .topbar.scrolled { border-color: rgba(255, 255, 255, .08); background: rgba(17, 23, 29, .92); box-shadow: 0 8px 34px rgba(0, 0, 0, .24); }
 .theme-dark .brand-mark span,
 .theme-dark .nav button:hover,
-.theme-dark .hero h1 em,
-.theme-dark .footer-heart { color: #d4746e; }
+.theme-dark .hero h1 em { color: #d4746e; }
 .theme-dark .nav button { color: #c9c3bd; }
 .theme-dark .nav .nav-pill { color: #fff; background: #b85f5a; }
 .theme-dark .nav .theme-toggle { color: #e5c285; border-color: rgba(229, 194, 133, .34); }
@@ -517,15 +541,15 @@ main section[id] { scroll-margin-top: 78px; }
 .theme-dark .promise { color: #eef4f7; background: #263f52; }
 .theme-dark .story { background: var(--surface-story); }
 .theme-dark .footprints { background: var(--surface-map); }
-.theme-dark .wishlist { color: #fbf1ed; background: #713d42; }
+.theme-dark .vow-section { color: #fbf1ed; background: #713d42; }
 .theme-dark .footer { color: #aaa29d; background: var(--surface-footer); }
+.theme-dark .footer-counter { background: rgba(241,245,247,.92); border-color: rgba(126,169,200,.25); }
 .theme-dark .love-letter { color: #ded6d0; background: #20272c; box-shadow: 0 30px 90px rgba(0, 0, 0, .5); }
 .theme-dark .love-letter::before { border-color: #46515a; }
 .theme-dark .love-letter p { color: #b9b1ab; }
 .theme-dark .modal-close { color: #c4bbb4; }
-.theme-dark .toast-message { background: #b85f5a; }
 
-@media (max-width: 900px) {
+@media (max-width: 1050px) {
   .topbar { height: 82px; }
   .brand-copy { display: none; }
   .menu-toggle { display: block; }
@@ -539,10 +563,10 @@ main section[id] { scroll-margin-top: 78px; }
 .hero-copy { text-align: center; }
   .eyebrow, .hero-actions { justify-content: center; }
   .hero-visual { min-height: 480px; }
-  .wishlist { grid-template-columns: 1fr; gap: 55px; }
-  .wish-copy { text-align: center; }
-  .wish-copy .eyebrow { justify-content: center; }
-  .wish-copy > p:not(.eyebrow) { margin-left: auto; margin-right: auto; }
+  .vow-section { grid-template-columns: 1fr; gap: 48px; }
+  .vow-copy { text-align: center; }
+  .vow-copy .eyebrow { justify-content: center; }
+  .vow-copy > p:not(.eyebrow) { margin-left: auto; margin-right: auto; }
 }
 
 @media (max-width: 600px) {
@@ -561,12 +585,14 @@ main section[id] { scroll-margin-top: 78px; }
   .promise { min-height: 190px; }
   .story { padding-top: 82px; padding-bottom: 85px; }
   .section-heading { grid-template-columns: 1fr; gap: 26px; }
-  .section-heading h2, .wish-copy h2 { font-size: 38px; }
+  .footprint-stats { width: 100%; min-width: 0; }
+  .footprint-stats div { padding-left: 5px; padding-right: 5px; }
+  .section-heading h2, .vow-copy h2 { font-size: 38px; }
   .footprints { padding-top: 82px; padding-bottom: 85px; }
-  .wishlist { padding-top: 80px; padding-bottom: 80px; }
-  .wish-list button { grid-template-columns: 34px 1fr auto; gap: 10px; }
+  .vow-section { padding-top: 80px; padding-bottom: 80px; }
   .footer { padding-top: 42px; padding-bottom: 42px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .footer > span:last-child { text-align: center; }
+  .footer-counter { justify-self: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
