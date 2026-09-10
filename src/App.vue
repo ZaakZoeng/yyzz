@@ -1,27 +1,34 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import Backtop from "./components/Backtop.vue";
 import FootprintMap from "./components/FootprintMap.vue";
 import LoveTimeline from "./components/LoveTimeline.vue";
 import VowBarrage from "./components/VowBarrage.vue";
 import VowDetail from "./components/VowDetail.vue";
 import { journeyStats } from "./data/journey";
-import { vowPosts } from "./data/vows";
+import { getVowPosts } from "./data/vows";
 
 type ColorTheme = "light" | "dark";
 
+const route = useRoute();
+const router = useRouter();
+const { t, locale } = useI18n();
 const relationshipStartedAt = new Date("2018-04-05T00:00:00+08:00");
 const now = ref(new Date());
 const menuOpen = ref(false);
 const noteOpen = ref(false);
 const theme = ref<ColorTheme>("light");
 const headerScrolled = ref(false);
-const currentVowSlug = ref("");
 let clock: number | undefined;
 let revealObserver: IntersectionObserver | undefined;
 
+const routeLocale = computed(() => route.params.locale === "en" ? "en-US" : "zh-CN");
+const routeLocaleSegment = computed(() => routeLocale.value === "en-US" ? "en" : "zh");
+const currentVowSlug = computed(() => route.name === "vow" ? String(route.params.slug || "") : "");
 const selectedVow = computed(() =>
-  vowPosts.find((vow) => vow.slug === currentVowSlug.value),
+  getVowPosts(routeLocale.value).find((vow) => vow.slug === currentVowSlug.value),
 );
 
 const dayCount = computed(() => {
@@ -49,8 +56,7 @@ const nextAnniversary = computed(() => {
 
 async function scrollToSection(id: string) {
   if (currentVowSlug.value) {
-    window.location.hash = "";
-    currentVowSlug.value = "";
+    await router.push({ name: "home", params: { locale: routeLocaleSegment.value } });
     await nextTick();
     setupRevealTargets();
   }
@@ -80,12 +86,13 @@ function setupRevealTargets() {
   revealTargets.forEach((target) => revealObserver?.observe(target));
 }
 
-function handleHashChange() {
-  const match = window.location.hash.match(/^#\/vows\/([^/?]+)/);
-  currentVowSlug.value = match ? decodeURIComponent(match[1]) : "";
-  menuOpen.value = false;
-  window.scrollTo({ top: 0 });
-  void nextTick(setupRevealTargets);
+function toggleLocale() {
+  const nextSegment = routeLocale.value === "zh-CN" ? "en" : "zh";
+  window.localStorage.setItem("yyzz-locale", nextSegment === "en" ? "en-US" : "zh-CN");
+  void router.push({
+    name: route.name === "vow" ? "vow" : "home",
+    params: { locale: nextSegment, ...(currentVowSlug.value ? { slug: currentVowSlug.value } : {}) },
+  });
 }
 
 function applyTheme(nextTheme: ColorTheme) {
@@ -111,110 +118,121 @@ onMounted(() => {
   applyTheme(savedTheme === "dark" ? "dark" : "light");
   clock = window.setInterval(() => (now.value = new Date()), 1_000);
   handleScroll();
-  handleHashChange();
   window.addEventListener("scroll", handleScroll, { passive: true });
-  window.addEventListener("hashchange", handleHashChange);
+  setupRevealTargets();
 });
 
 onBeforeUnmount(() => {
   window.clearInterval(clock);
   window.removeEventListener("scroll", handleScroll);
-  window.removeEventListener("hashchange", handleHashChange);
   revealObserver?.disconnect();
+});
+
+watch(routeLocale, (nextLocale) => {
+  locale.value = nextLocale;
+  document.documentElement.lang = nextLocale;
+  document.title = nextLocale === "en-US" ? "YY & ZZ · Our Love Space" : "YY & ZZ · 我们的爱情空间";
+  window.localStorage.setItem("yyzz-locale", nextLocale);
+}, { immediate: true });
+
+watch(() => route.fullPath, () => {
+  menuOpen.value = false;
+  if (!route.hash) window.scrollTo({ top: 0 });
+  void nextTick(setupRevealTargets);
 });
 </script>
 
 <template>
   <div :class="['site-shell', `theme-${theme}`]">
     <header :class="['topbar', { scrolled: headerScrolled }]">
-      <button class="brand" type="button" aria-label="返回首页" @click="scrollToSection('home')">
+      <button class="brand" type="button" :aria-label="t('brand.home')" @click="scrollToSection('home')">
         <span class="brand-mark">YY<span>♡</span>ZZ</span>
-        <span class="brand-copy">我们的爱情空间</span>
+        <span class="brand-copy">{{ t('brand.subtitle') }}</span>
       </button>
 
       <button
         class="menu-toggle"
         type="button"
         :aria-expanded="menuOpen"
-        aria-label="打开导航"
+        :aria-label="t('common.menu')"
         @click="menuOpen = !menuOpen"
       >
         <span></span><span></span>
       </button>
 
-      <nav :class="['nav', { open: menuOpen }]" aria-label="主导航">
-        <button type="button" @click="scrollToSection('home')">首页</button>
-        <button type="button" @click="scrollToSection('story')">爱情点滴</button>
-        <button type="button" @click="scrollToSection('footprints')">足迹地图</button>
-        <button type="button" @click="scrollToSection('vows')">还愿清单</button>
+      <nav :class="['nav', { open: menuOpen }]" :aria-label="t('common.nav')">
+        <button type="button" @click="scrollToSection('home')">{{ t('nav.home') }}</button>
+        <button type="button" @click="scrollToSection('story')">{{ t('nav.story') }}</button>
+        <button type="button" @click="scrollToSection('footprints')">{{ t('nav.footprints') }}</button>
+        <button type="button" @click="scrollToSection('vows')">{{ t('nav.vows') }}</button>
+        <button class="language-toggle" type="button" :title="routeLocale === 'zh-CN' ? 'English' : '中文'" @click="toggleLocale">
+          {{ routeLocale === 'zh-CN' ? 'EN' : '中文' }}
+        </button>
         <button
           class="theme-toggle"
           type="button"
-          :aria-label="theme === 'light' ? '切换到暗色模式' : '切换到明亮模式'"
-          :title="theme === 'light' ? '切换到暗色模式' : '切换到明亮模式'"
+          :aria-label="theme === 'light' ? t('theme.dark') : t('theme.light')"
+          :title="theme === 'light' ? t('theme.dark') : t('theme.light')"
           @click="toggleTheme"
         >
           <span aria-hidden="true">{{ theme === 'light' ? '☾' : '☀' }}</span>
         </button>
-        <button class="nav-pill" type="button" @click="noteOpen = true">写给你</button>
+        <button class="nav-pill" type="button" @click="noteOpen = true">{{ t('nav.letter') }}</button>
       </nav>
     </header>
 
     <main v-if="!currentVowSlug">
       <section id="home" class="hero section-pad">
         <div class="hero-copy">
-          <p class="eyebrow"><span></span> YY & ZZ · LOVE SPACE</p>
-          <h1>把普通的日子，<br /><em>过成我们的故事。</em></h1>
-          <p class="hero-description">
-            这里收藏两个人的微小幸福：一次散步、一顿晚饭，<br class="desktop-only" />
-            还有每个想起你就会微笑的瞬间。
-          </p>
+          <p class="eyebrow"><span></span> {{ t('hero.eyebrow') }}</p>
+          <h1>{{ t('hero.title') }}<br /><em>{{ t('hero.titleAccent') }}</em></h1>
+          <p class="hero-description">{{ t('hero.description') }}</p>
           <div class="hero-actions">
             <button class="primary-button" type="button" @click="scrollToSection('story')">
-              翻开我们的故事 <span>↘</span>
+              {{ t('hero.storyAction') }} <span>↘</span>
             </button>
-            <button class="text-button" type="button" @click="noteOpen = true">读一封小情书</button>
+            <button class="text-button" type="button" @click="noteOpen = true">{{ t('hero.letterAction') }}</button>
           </div>
         </div>
 
-        <div class="hero-visual" aria-label="在一起的时间">
+        <div class="hero-visual" :aria-label="t('hero.together')">
           <div class="orbit orbit-one"></div>
           <div class="orbit orbit-two"></div>
           <div class="love-card">
-            <span class="card-label">WE HAVE BEEN TOGETHER</span>
+            <span class="card-label">{{ t('hero.cardLabel') }}</span>
             <strong>{{ dayCount }}</strong>
-            <span class="days-label">DAYS</span>
+            <span class="days-label">{{ t('hero.days') }}</span>
             <div
               class="together-clock"
-              :aria-label="`今天已经一起度过 ${togetherClock[0]} 小时 ${togetherClock[1]} 分钟 ${togetherClock[2]} 秒`"
+              :aria-label="t('hero.togetherAria', { hours: togetherClock[0], minutes: togetherClock[1], seconds: togetherClock[2] })"
             >
               <span>{{ togetherClock[0] }}</span><i>:</i>
               <span>{{ togetherClock[1] }}</span><i>:</i>
               <span>{{ togetherClock[2] }}</span>
             </div>
-            <span class="clock-label">HOURS&nbsp;&nbsp; MINUTES&nbsp;&nbsp; SECONDS</span>
+            <span class="clock-label">{{ t('hero.clockLabels') }}</span>
             <div class="card-divider"></div>
-            <p>自 2018.04.05 起</p>
+            <p>{{ t('hero.since') }}</p>
           </div>
-          <div class="floating-note note-top">永远对彼此好奇 ✦</div>
-          <div class="floating-note note-bottom">下一纪念日 · {{ nextAnniversary }} 天</div>
+          <div class="floating-note note-top">{{ t('hero.curiosity') }}</div>
+          <div class="floating-note note-bottom">{{ t('hero.anniversary', { days: nextAnniversary }) }}</div>
           <span class="spark spark-one">✦</span>
           <span class="spark spark-two">✦</span>
         </div>
       </section>
 
-      <section class="promise section-pad" aria-label="爱情寄语" data-reveal>
-        <p>“世界很大，幸福很小。有你在身边，刚刚好。”</p>
-        <span>OUR LITTLE UNIVERSE</span>
+      <section class="promise section-pad" :aria-label="t('promise.label')" data-reveal>
+        <p>{{ t('promise.quote') }}</p>
+        <span>{{ t('promise.label') }}</span>
       </section>
 
       <section id="story" class="story section-pad">
         <div class="section-heading" data-reveal>
           <div>
-            <p class="eyebrow"><span></span> OUR TIMELINE</p>
-            <h2>从相识开始，<br />一路写到今天。</h2>
+            <p class="eyebrow"><span></span> {{ t('story.eyebrow') }}</p>
+            <h2>{{ t('story.title') }}<br />{{ t('story.titleSecond') }}</h2>
           </div>
-          <p class="section-intro">只用 ZZ 与 YY 两个代号，收藏那些值得记住的日期、城市与共同经历。</p>
+          <p class="section-intro">{{ t('story.intro') }}</p>
         </div>
 
         <div data-reveal>
@@ -225,15 +243,15 @@ onBeforeUnmount(() => {
       <section id="footprints" class="footprints section-pad">
         <div class="section-heading map-heading" data-reveal>
           <div>
-            <p class="eyebrow blue"><span></span> OUR FOOTPRINTS</p>
-            <h2>走过的城市，<br />拼成一张地图。</h2>
+            <p class="eyebrow blue"><span></span> {{ t('footprints.eyebrow') }}</p>
+            <h2>{{ t('footprints.title') }}<br />{{ t('footprints.titleSecond') }}</h2>
           </div>
-          <div class="footprint-stats" aria-label="爱情足迹统计">
-            <div><strong>{{ journeyStats.continents }}</strong><span>大洲</span></div>
-            <div><strong>{{ journeyStats.countries }}</strong><span>国家</span></div>
-            <div><strong>{{ journeyStats.cities }}</strong><span>城市</span></div>
-            <div><strong>{{ journeyStats.moments }}</strong><span>时刻</span></div>
-            <div><strong>{{ journeyStats.years }}</strong><span>年份</span></div>
+          <div class="footprint-stats" :aria-label="t('footprints.statsAria')">
+            <div><strong>{{ journeyStats.continents }}</strong><span>{{ t('footprints.continents') }}</span></div>
+            <div><strong>{{ journeyStats.countries }}</strong><span>{{ t('footprints.countries') }}</span></div>
+            <div><strong>{{ journeyStats.cities }}</strong><span>{{ t('footprints.cities') }}</span></div>
+            <div><strong>{{ journeyStats.moments }}</strong><span>{{ t('footprints.moments') }}</span></div>
+            <div><strong>{{ journeyStats.years }}</strong><span>{{ t('footprints.years') }}</span></div>
           </div>
         </div>
 
@@ -244,9 +262,9 @@ onBeforeUnmount(() => {
 
       <section id="vows" class="vow-section section-pad">
         <div class="vow-copy" data-reveal>
-          <p class="eyebrow light"><span></span> OUR VOW LIST</p>
-          <h2>还有好多以后，<br />想和你一起实现。</h2>
-          <p>每一条移动的愿望，都是一篇可以慢慢读完的记录。点击它，看看我们写下的约定。</p>
+          <p class="eyebrow light"><span></span> {{ t('vows.eyebrow') }}</p>
+          <h2>{{ t('vows.title') }}<br />{{ t('vows.titleSecond') }}</h2>
+          <p>{{ t('vows.intro') }}</p>
         </div>
 
         <div class="vow-barrage-wrap" data-reveal>
@@ -258,35 +276,50 @@ onBeforeUnmount(() => {
     <VowDetail v-else :vow="selectedVow" />
 
     <footer class="footer section-pad">
-      <a
-        class="footer-counter"
-        href="https://info.flagcounter.com/TSBZ"
-        target="_blank"
-        rel="nofollow noreferrer"
-        title="查看匿名访客国家与访问量统计"
-      >
-        <img
-          src="https://s01.flagcounter.com/map/TSBZ/size_s/txt_365D7E/border_D5DEE5/pageviews_1/viewers_0/flags_0/"
-          alt="Flag Counter 匿名访客统计"
-          loading="lazy"
-          referrerpolicy="no-referrer"
-        />
-      </a>
-      <p>Made with love, for YY & ZZ.</p>
-      <span>© 2017—{{ now.getFullYear() }}—∞ · 我们的爱情空间</span>
+      <div class="footer-visitors">
+        <a
+          class="footer-counter footer-counter-map"
+          href="https://mapmyvisitors.com/web/1c85m"
+          target="_blank"
+          rel="nofollow noreferrer"
+          :title="t('footer.visitors')"
+        >
+          <img
+            src="https://mapmyvisitors.com/map.png?cl=ffffff&t=tt&d=A7H0z-fWuTV5ZWODeP-7_PWS_da3fI-8VE7ocTInB1E&cl=527b9d"
+            :alt="t('footer.visitorsAlt')"
+            referrerpolicy="no-referrer"
+          />
+        </a>
+
+        <a
+          class="footer-counter-legacy"
+          href="https://info.flagcounter.com/TSBZ"
+          tabindex="-1"
+          aria-hidden="true"
+          rel="nofollow noreferrer"
+        >
+          <img
+            src="https://s01.flagcounter.com/map/TSBZ/size_s/txt_365D7E/border_D5DEE5/pageviews_1/viewers_0/flags_0/"
+            alt=""
+            referrerpolicy="no-referrer"
+          />
+        </a>
+      </div>
+      <p>{{ t('footer.made') }}</p>
+      <span>© 2017—{{ now.getFullYear() }}—∞ · {{ t('footer.copyright') }}</span>
     </footer>
 
     <Backtop />
 
     <Transition name="fade">
       <div v-if="noteOpen" class="modal-backdrop" role="presentation" @click.self="noteOpen = false">
-        <article class="love-letter" role="dialog" aria-modal="true" aria-label="写给你的信">
-          <button class="modal-close" type="button" aria-label="关闭" @click="noteOpen = false">×</button>
-          <span class="letter-date">TO MY FAVORITE PERSON</span>
-          <h2>见字如面：</h2>
-          <p>谢谢你来到我的生命里，让重复的日子有了不同的颜色。</p>
-          <p>以后也一起吃好多顿饭，看好多次日落，在每一个普通的明天里继续喜欢彼此。</p>
-          <strong>爱你的人，ZZ ♡</strong>
+        <article class="love-letter" role="dialog" aria-modal="true" :aria-label="t('letter.aria')">
+          <button class="modal-close" type="button" :aria-label="t('letter.close')" @click="noteOpen = false">×</button>
+          <span class="letter-date">{{ t('letter.label') }}</span>
+          <h2>{{ t('letter.title') }}</h2>
+          <p>{{ t('letter.p1') }}</p>
+          <p>{{ t('letter.p2') }}</p>
+          <strong>{{ t('letter.sign') }}</strong>
         </article>
       </div>
     </Transition>
@@ -366,6 +399,8 @@ onBeforeUnmount(() => {
 .nav { display: flex; align-items: center; gap: clamp(22px, 3vw, 44px); }
 .nav button { color: #5b4a45; border: 0; background: none; font-size: 14px; cursor: pointer; transition: color .2s ease; }
 .nav button:hover { color: #b8514a; }
+.nav .language-toggle { min-width: 44px; padding: 7px 11px; color: #365d7e; border: 1px solid rgba(54, 93, 126, .24); border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+.nav .language-toggle:hover { color: #fff; border-color: #365d7e; background: #365d7e; }
 .nav .nav-pill { padding: 11px 21px; color: #fff; background: #365d7e; border-radius: 999px; }
 .nav .theme-toggle { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; color: #365d7e; border: 1px solid rgba(54, 93, 126, .24); border-radius: 50%; font-size: 18px; transition: color .25s ease, border-color .25s ease, transform .25s ease, background .25s ease; }
 .nav .theme-toggle:hover { color: #fff; border-color: #365d7e; background: #365d7e; transform: rotate(12deg); }
@@ -388,7 +423,7 @@ h1, h2, h3, p { margin-top: 0; }
   line-height: 1.22; letter-spacing: -.06em; font-weight: 600;
 }
 .hero h1 em { color: #b8514a; font-style: normal; }
-.hero-description { color: #7a6964; font-size: 16px; line-height: 2; }
+.hero-description { color: #7a6964; font-size: 16px; line-height: 2; white-space: pre-line; }
 .hero-actions { display: flex; align-items: center; gap: 32px; margin-top: 42px; }
 .primary-button { padding: 15px 25px; border-radius: 999px; cursor: pointer; transition: transform .2s ease, background .2s ease; }
 .primary-button { color: #fff; border: 1px solid #b8514a; background: #b8514a; box-shadow: 0 12px 30px rgba(184, 81, 74, .18); }
@@ -448,8 +483,11 @@ h1, h2, h3, p { margin-top: 0; }
 .footer { min-height: 180px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; color: #796963; background: #f2ebe3; font-size: 12px; }
 .footer p { margin: 0; font-family: Georgia, serif; font-style: italic; }
 .footer > span:last-child { text-align: right; }
-.footer-counter { justify-self: start; display: block; padding: 5px; overflow: hidden; background: rgba(255,255,255,.7); border: 1px solid rgba(54,93,126,.15); border-radius: 8px; }
-.footer-counter img { display: block; max-width: 170px; height: auto; border: 0; }
+.footer-visitors { position: relative; justify-self: start; }
+.footer-counter { display: block; padding: 6px; overflow: hidden; background: rgba(255,255,255,.72); border: 1px solid rgba(54,93,126,.18); border-radius: 9px; box-shadow: 0 8px 24px rgba(54,93,126,.08); }
+.footer-counter-map img { display: block; width: 190px; max-width: 100%; height: auto; border: 0; border-radius: 4px; }
+.footer-counter-legacy { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
+.footer-counter-legacy img { width: 1px; height: 1px; }
 
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; padding: 24px; display: grid; place-items: center; background: rgba(38, 29, 27, .54); backdrop-filter: blur(6px); }
 .love-letter { position: relative; width: min(520px, 100%); padding: clamp(38px, 7vw, 70px); color: #463733; background: #fffaf3; box-shadow: 0 30px 90px rgba(31,20,18,.25); transform: rotate(-1deg); }
@@ -522,6 +560,8 @@ main section[id] { scroll-margin-top: 78px; }
 .theme-dark .nav button:hover,
 .theme-dark .hero h1 em { color: #d4746e; }
 .theme-dark .nav button { color: #c9c3bd; }
+.theme-dark .nav .language-toggle { color: #a9cee7; border-color: rgba(126, 169, 200, .34); }
+.theme-dark .nav .language-toggle:hover { color: #11171d; border-color: #a9cee7; background: #a9cee7; }
 .theme-dark .nav .nav-pill { color: #fff; background: #b85f5a; }
 .theme-dark .nav .theme-toggle { color: #e5c285; border-color: rgba(229, 194, 133, .34); }
 .theme-dark .nav .theme-toggle:hover { color: #11171d; border-color: #e5c285; background: #e5c285; }
@@ -543,7 +583,7 @@ main section[id] { scroll-margin-top: 78px; }
 .theme-dark .footprints { background: var(--surface-map); }
 .theme-dark .vow-section { color: #fbf1ed; background: #713d42; }
 .theme-dark .footer { color: #aaa29d; background: var(--surface-footer); }
-.theme-dark .footer-counter { background: rgba(241,245,247,.92); border-color: rgba(126,169,200,.25); }
+.theme-dark .footer-counter { background: rgba(241,245,247,.94); border-color: rgba(126,169,200,.3); box-shadow: 0 10px 28px rgba(0,0,0,.2); }
 .theme-dark .love-letter { color: #ded6d0; background: #20272c; box-shadow: 0 30px 90px rgba(0, 0, 0, .5); }
 .theme-dark .love-letter::before { border-color: #46515a; }
 .theme-dark .love-letter p { color: #b9b1ab; }
@@ -557,6 +597,7 @@ main section[id] { scroll-margin-top: 78px; }
   .nav.open { display: flex; }
   .nav button { padding: 12px 14px; text-align: left; }
   .nav .nav-pill { margin-top: 5px; text-align: center; }
+  .nav .language-toggle { margin-top: 5px; text-align: center; }
   .nav .theme-toggle { width: 100%; height: 42px; margin-top: 5px; border-radius: 999px; }
   .theme-dark .nav { border-color: rgba(255,255,255,.08); background: rgba(24, 32, 39, .98); box-shadow: 0 18px 45px rgba(0,0,0,.3); }
   .hero { min-height: auto; padding-top: 130px; grid-template-columns: 1fr; gap: 55px; background: radial-gradient(circle at 90% 6%, rgba(230,181,167,.33), transparent 26%), #f8f4ed; }
@@ -592,7 +633,7 @@ main section[id] { scroll-margin-top: 78px; }
   .vow-section { padding-top: 80px; padding-bottom: 80px; }
   .footer { padding-top: 42px; padding-bottom: 42px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .footer > span:last-child { text-align: center; }
-  .footer-counter { justify-self: center; }
+  .footer-visitors { justify-self: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

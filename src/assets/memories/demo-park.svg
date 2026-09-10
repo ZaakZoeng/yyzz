@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">蓝调公园与春日花树</title>
+  <desc id="desc">湖面、小径和粉色花树组成的公园抽象插画，不包含人物信息。</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dce8ee"/><stop offset="1" stop-color="#88a9bc"/></linearGradient></defs>
+  <rect width="1200" height="750" fill="url(#bg)"/>
+  <circle cx="940" cy="155" r="78" fill="#fff1dc" opacity=".82"/>
+  <path d="M0 490c190-80 360-50 530 9 193 66 405 22 670-45v296H0Z" fill="#527b9d" opacity=".75"/>
+  <path d="M470 750c42-159 134-250 275-343 92-61 155-130 176-213" fill="none" stroke="#f4ddd2" stroke-width="88" opacity=".9"/>
+  <g stroke="#365d7e" stroke-width="22" stroke-linecap="round"><path d="M230 475V220M1040 460V235"/></g>
+  <g fill="#c87872"><circle cx="180" cy="225" r="72"/><circle cx="255" cy="175" r="95"/><circle cx="320" cy="250" r="78"/><circle cx="980" cy="245" r="80"/><circle cx="1060" cy="190" r="96"/><circle cx="1125" cy="270" r="72"/></g>
+  <path d="M50 570c224-45 386 32 578 4 221-32 380-25 522 8" fill="none" stroke="#dbe7ec" stroke-width="8" opacity=".6"/>
+</svg>

@@ -2,9 +2,15 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import type { VowPost } from "../data/vows";
 
 const props = defineProps<{ vow?: VowPost }>();
+const route = useRoute();
+const { t } = useI18n();
+const homeRoute = computed(() => ({ name: "home", params: { locale: route.params.locale } }));
+const vowListRoute = computed(() => ({ ...homeRoute.value, hash: "#vows" }));
 
 const renderedContent = computed(() => {
   if (!props.vow) return "";
@@ -15,7 +21,7 @@ const renderedContent = computed(() => {
 <template>
   <main class="vow-detail-page">
     <article v-if="vow" class="vow-article">
-      <a class="back-link" href="#"><span aria-hidden="true">←</span> 返回还愿清单</a>
+      <RouterLink class="back-link" :to="vowListRoute"><span aria-hidden="true">←</span> {{ t('vows.back') }}</RouterLink>
       <header>
         <p><span>{{ vow.status }}</span><time v-if="vow.date" :datetime="vow.date">{{ vow.date }}</time></p>
         <h1>{{ vow.title }}</h1>
@@ -24,15 +30,15 @@ const renderedContent = computed(() => {
       <div class="markdown-body" v-html="renderedContent"></div>
       <footer>
         <span>YY ♡ ZZ</span>
-        <a href="#">回到我们的爱情空间 →</a>
+        <RouterLink :to="homeRoute">{{ t('vows.home') }} →</RouterLink>
       </footer>
     </article>
 
     <section v-else class="not-found">
       <span>404</span>
-      <h1>这份愿望暂时找不到</h1>
-      <p>它可能更换了名字，或还没有被写进清单。</p>
-      <a href="#">返回首页</a>
+      <h1>{{ t('vows.notFoundTitle') }}</h1>
+      <p>{{ t('vows.notFoundText') }}</p>
+      <RouterLink :to="homeRoute">{{ t('vows.backHome') }}</RouterLink>
     </section>
   </main>
 </template>

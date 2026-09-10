@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">一起打羽毛球</title>
+  <desc id="desc">球拍、羽毛球和运动轨迹组成的抽象插画，不包含人物信息。</desc>
+  <rect width="1200" height="750" fill="#dfe9ee"/>
+  <circle cx="340" cy="330" r="205" fill="#527b9d" opacity=".9"/>
+  <circle cx="340" cy="330" r="156" fill="none" stroke="#eef4f6" stroke-width="8"/>
+  <g stroke="#eef4f6" stroke-width="4" opacity=".7"><path d="M205 252h270M185 330h310M205 408h270M262 185v290M340 174v312M418 185v290"/></g>
+  <path d="m485 478 224 189" stroke="#365d7e" stroke-width="40" stroke-linecap="round"/>
+  <path d="M770 190c100 58 164 139 198 246" fill="none" stroke="#b8514a" stroke-width="12" stroke-dasharray="20 25"/>
+  <g transform="translate(916 425) rotate(25)"><ellipse cx="0" cy="0" rx="36" ry="25" fill="#b8514a"/><path d="M10-8 145-94M15 2l145-48M8 12l130 1" stroke="#f8f4ed" stroke-width="19" stroke-linecap="round"/></g>
+  <path d="M0 675h1200v75H0Z" fill="#b8514a" opacity=".75"/>
+</svg>

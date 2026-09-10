@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const visible = ref(false);
 
@@ -21,9 +24,9 @@ onBeforeUnmount(() => window.removeEventListener("scroll", updateVisibility));
 
 <template>
   <Transition name="backtop">
-    <button v-if="visible" class="backtop" type="button" aria-label="返回页面顶部" @click="backToTop">
+    <button v-if="visible" class="backtop" type="button" :aria-label="t('common.backTop')" @click="backToTop">
       <span aria-hidden="true">↑</span>
-      <small>TOP</small>
+      <small>{{ t('common.top') }}</small>
     </button>
   </Transition>
 </template>

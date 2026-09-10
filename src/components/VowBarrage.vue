@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { vowPosts } from "../data/vows";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { getVowPosts } from "../data/vows";
+
+const route = useRoute();
+const { t, locale } = useI18n();
+const vowPosts = computed(() => getVowPosts(locale.value));
+const routeLocale = computed(() => route.params.locale === "en" ? "en" : "zh");
 
 function barrageStyle(index: number) {
   return {
@@ -12,21 +20,21 @@ function barrageStyle(index: number) {
 
 <template>
   <div class="vow-barrage">
-    <div class="barrage-stage" aria-label="还愿清单">
-      <a
+    <div class="barrage-stage" :aria-label="t('vows.aria')">
+      <RouterLink
         v-for="(vow, index) in vowPosts"
         :key="vow.slug"
         class="vow-bullet"
-        :href="`#/vows/${encodeURIComponent(vow.slug)}`"
+        :to="{ name: 'vow', params: { locale: routeLocale, slug: vow.slug } }"
         :style="barrageStyle(index)"
       >
         <span>{{ String(index + 1).padStart(2, '0') }}</span>
         <strong>{{ vow.title }}</strong>
         <small>{{ vow.status }}</small>
         <i aria-hidden="true">↗</i>
-      </a>
+      </RouterLink>
     </div>
-    <p class="barrage-tip"><span aria-hidden="true">↗</span> 悬停可暂停弹幕，点击阅读完整记录</p>
+    <p class="barrage-tip"><span aria-hidden="true">↗</span> {{ t('vows.tip') }}</p>
   </div>
 </template>
 

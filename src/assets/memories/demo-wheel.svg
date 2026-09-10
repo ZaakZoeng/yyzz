@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">蓝粉暮色中的摩天轮</title>
+  <desc id="desc">暮色天空、摩天轮与水面倒影的抽象插画，不包含人物信息。</desc>
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#486f8f"/><stop offset="1" stop-color="#e5aaa0"/></linearGradient></defs>
+  <rect width="1200" height="750" fill="url(#sky)"/>
+  <circle cx="760" cy="322" r="220" fill="none" stroke="#f7e8df" stroke-width="12" opacity=".88"/>
+  <circle cx="760" cy="322" r="18" fill="#b8514a"/>
+  <g stroke="#f7e8df" stroke-width="5" opacity=".75"><path d="M760 102v440M540 322h440M604 166l312 312M604 478l312-312"/></g>
+  <g fill="#365d7e"><circle cx="760" cy="102" r="18"/><circle cx="980" cy="322" r="18"/><circle cx="760" cy="542" r="18"/><circle cx="540" cy="322" r="18"/><circle cx="604" cy="166" r="18"/><circle cx="916" cy="478" r="18"/></g>
+  <path d="m760 322-120 365M760 322l120 365M610 688h300" fill="none" stroke="#294c68" stroke-width="16"/>
+  <path d="M0 625c235-42 403 35 624 4 238-34 375-24 576 18v103H0Z" fill="#365d7e" opacity=".66"/>
+</svg>

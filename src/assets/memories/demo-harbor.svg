@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">滨海公园的蓝色黄昏</title>
+  <desc id="desc">海湾、城市剪影和步道组成的抽象黄昏插画，不包含人物信息。</desc>
+  <defs><linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#365d7e"/><stop offset=".6" stop-color="#9fb8c7"/><stop offset="1" stop-color="#e7b2a6"/></linearGradient></defs>
+  <rect width="1200" height="750" fill="url(#dusk)"/>
+  <circle cx="870" cy="220" r="78" fill="#ffe2c1" opacity=".86"/>
+  <path d="M0 390h120v-85h90v85h68V245h112v145h85V292h132v98h78V220h100v170h70v-112h128v112h137v105H0Z" fill="#294c68" opacity=".82"/>
+  <path d="M0 475c216-31 383 31 586 2 240-35 406-23 614 14v259H0Z" fill="#527b9d"/>
+  <g fill="none" stroke="#dce8ec" opacity=".55"><path d="M0 555c210-45 390 38 595 3 226-39 393-19 605 16" stroke-width="7"/><path d="M35 635c220-32 346 29 552 3 255-32 398-18 575 8" stroke-width="5"/></g>
+  <path d="M0 690c210-82 405-45 610 18 192 59 393 23 590-32v74H0Z" fill="#e9c8b1"/>
+</svg>

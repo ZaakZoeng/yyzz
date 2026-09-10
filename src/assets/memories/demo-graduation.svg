@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">毕业日的蓝色礼帽</title>
+  <desc id="desc">礼帽、书页与暖色花瓣组成的毕业主题抽象插画，不包含人物信息。</desc>
+  <rect width="1200" height="750" fill="#edf2f4"/>
+  <circle cx="910" cy="160" r="150" fill="#eab7aa" opacity=".62"/>
+  <path d="m600 155 360 155-360 156-360-156Z" fill="#365d7e"/>
+  <path d="M410 365v125c0 86 380 86 380 0V365L600 448Z" fill="#527b9d"/>
+  <path d="M930 320v185" stroke="#b8514a" stroke-width="16"/><circle cx="930" cy="525" r="25" fill="#b8514a"/>
+  <path d="M125 590c156-74 304-62 475 16 171-78 319-90 475-16v120c-161-50-315-38-475 18-160-56-314-68-475-18Z" fill="#f8f4ed" stroke="#9ab0bf" stroke-width="8"/>
+  <g fill="#c97870"><circle cx="178" cy="170" r="13"/><circle cx="235" cy="220" r="8"/><circle cx="1022" cy="580" r="11"/></g>
+</svg>

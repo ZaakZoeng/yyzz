@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { journeyMemories } from "../data/journey";
+import { useI18n } from "vue-i18n";
+import { getCityName, getMemoryCopy, journeyMemories } from "../data/journey";
+
+const { t, locale } = useI18n();
 
 const activeYear = ref("all");
 const expanded = ref(false);
@@ -28,18 +31,22 @@ function selectYear(year: string) {
 function markImageAsFailed(src: string) {
   failedImages.value = new Set([...failedImages.value, src]);
 }
+
+function memoryCopy(memory: (typeof journeyMemories)[number]) {
+  return getMemoryCopy(memory, locale.value);
+}
 </script>
 
 <template>
   <div class="timeline-explorer">
-    <div class="year-filter" aria-label="按年份筛选爱情点滴">
+    <div class="year-filter" :aria-label="t('story.filterAria')">
       <button
         type="button"
         :class="{ active: activeYear === 'all' }"
         :aria-pressed="activeYear === 'all'"
         @click="selectYear('all')"
       >
-        精选
+        {{ t('story.featured') }}
       </button>
       <button
         v-for="year in years"
@@ -62,34 +69,38 @@ function markImageAsFailed(src: string) {
         <div class="timeline-content">
           <div class="entry-date">
             <time :datetime="memory.date">{{ memory.displayDate }}</time>
-            <small>{{ memory.kind }}</small>
+            <small>{{ memoryCopy(memory).kind }}</small>
           </div>
           <div class="entry-copy">
-            <h3>{{ memory.title }}</h3>
-            <p>{{ memory.city }}<template v-if="memory.place"> · {{ memory.place }}</template></p>
+            <h3>{{ memoryCopy(memory).title }}</h3>
+            <p>
+              {{ getCityName(memory.city, locale) }}<template v-if="memoryCopy(memory).place"> · {{ memoryCopy(memory).place }}</template>
+            </p>
           </div>
           <figure v-if="memory.image" class="memory-photo">
             <div class="memory-photo-frame">
               <img
                 v-if="!failedImages.has(memory.image.src)"
                 :src="memory.image.src"
-                :alt="memory.image.alt"
+                :alt="memoryCopy(memory).alt"
                 :style="{ objectPosition: memory.image.objectPosition || 'center' }"
                 loading="lazy"
                 decoding="async"
                 @error="markImageAsFailed(memory.image.src)"
               />
-              <div v-else class="memory-photo-placeholder" role="img" :aria-label="memory.image.alt">
+              <div v-else class="memory-photo-placeholder" role="img" :aria-label="memoryCopy(memory).alt">
                 <span aria-hidden="true">♡</span>
-                <p>照片待补充</p>
+                <p>{{ t('story.imagePending') }}</p>
               </div>
-              <span v-if="memory.image.demo" class="demo-label">示例图片</span>
+              <span v-if="memory.image.demo" class="demo-label">{{ t('story.demoImage') }}</span>
             </div>
-            <figcaption v-if="memory.image.caption">{{ memory.image.caption }}</figcaption>
+            <figcaption v-if="memoryCopy(memory).caption">{{ memoryCopy(memory).caption }}</figcaption>
           </figure>
         </div>
         <div class="timeline-node" aria-hidden="true">
-          <span>{{ String(index + 1).padStart(2, '0') }}</span>
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M12 20.4 4.25 13A5.1 5.1 0 0 1 11.5 5.85L12 6.4l.5-.55A5.1 5.1 0 0 1 19.75 13Z" />
+          </svg>
         </div>
       </article>
     </div>
@@ -100,7 +111,7 @@ function markImageAsFailed(src: string) {
       type="button"
       @click="expanded = !expanded"
     >
-      {{ expanded ? '收起完整时间线' : `查看全部 ${journeyMemories.length} 个时刻` }}
+      {{ expanded ? t('story.collapse') : t('story.expand', { count: journeyMemories.length }) }}
       <span aria-hidden="true">{{ expanded ? '↑' : '↓' }}</span>
     </button>
   </div>
@@ -180,11 +191,11 @@ function markImageAsFailed(src: string) {
   background: var(--surface-story, #fbf8f3);
   border: 1px solid var(--line-color, #d9c9c1);
   border-radius: 50%;
-  font-family: Georgia, serif;
-  font-size: 11px;
   transition: color .25s ease, background .25s ease, border-color .25s ease, transform .25s ease;
 }
-.timeline-entry:hover .timeline-node { color: #fff; background: var(--red, #a34f4a); border-color: var(--red, #a34f4a); transform: scale(1.08); }
+.timeline-node svg { width: 19px; height: 19px; overflow: visible; fill: transparent; stroke: var(--red, #a34f4a); stroke-width: 1.7; stroke-linejoin: round; transition: fill .2s ease; }
+.timeline-entry:hover .timeline-node { color: var(--red, #a34f4a); border-color: color-mix(in srgb, var(--red, #a34f4a) 62%, transparent); transform: scale(1.08); }
+.timeline-entry:hover .timeline-node svg { fill: var(--red, #a34f4a); }
 .entry-date { display: flex; flex-direction: column; gap: 7px; }
 .entry-left .entry-date { align-items: flex-end; }
 .entry-right .entry-date { align-items: flex-start; }

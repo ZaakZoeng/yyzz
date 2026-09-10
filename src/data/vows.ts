@@ -1,6 +1,7 @@
 type RawModuleMap = Record<string, string>;
 
 export type VowPost = {
+  locale: "zh-CN" | "en-US";
   slug: string;
   title: string;
   summary: string;
@@ -10,7 +11,7 @@ export type VowPost = {
   content: string;
 };
 
-const markdownModules = import.meta.glob("../content/vows/*.md", {
+const markdownModules = import.meta.glob("../content/vows/**/*.md", {
   eager: true,
   query: "?raw",
   import: "default",
@@ -33,6 +34,7 @@ function resolveLocalAssets(markdown: string, sourcePath: string) {
 
 function parseVow(sourcePath: string, rawContent: string): VowPost {
   const slug = sourcePath.split("/").pop()?.replace(/\.md$/, "") || "untitled";
+  const locale = sourcePath.includes("/en-US/") ? "en-US" : "zh-CN";
   const frontmatter = rawContent.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/);
   const metadata: Record<string, string> = {};
 
@@ -49,16 +51,27 @@ function parseVow(sourcePath: string, rawContent: string): VowPost {
   const body = frontmatter ? rawContent.slice(frontmatter[0].length) : rawContent;
 
   return {
+    locale,
     slug,
     title: metadata.title || slug.replace(/[-_]/g, " "),
-    summary: metadata.summary || "点击打开这份还愿记录。",
+    summary: metadata.summary || (locale === "en-US" ? "Open this vow to read the full story." : "点击打开这份还愿记录。"),
     date: metadata.date || "",
-    status: metadata.status || "心愿中",
+    status: metadata.status || (locale === "en-US" ? "Dreaming" : "心愿中"),
     order: Number(metadata.order) || 999,
     content: resolveLocalAssets(body, sourcePath),
   };
 }
 
-export const vowPosts = Object.entries(markdownModules)
+const allVowPosts = Object.entries(markdownModules)
   .map(([path, content]) => parseVow(path, content))
   .sort((a, b) => a.order - b.order || b.date.localeCompare(a.date));
+
+export function getVowPosts(locale: string) {
+  const localized = allVowPosts.filter((post) => post.locale === locale);
+  const chinese = allVowPosts.filter((post) => post.locale === "zh-CN");
+  if (locale === "zh-CN") return chinese;
+
+  const localizedSlugs = new Set(localized.map((post) => post.slug));
+  return [...localized, ...chinese.filter((post) => !localizedSlugs.has(post.slug))]
+    .sort((a, b) => a.order - b.order || b.date.localeCompare(a.date));
+}
