@@ -276,36 +276,36 @@ watch(() => route.fullPath, () => {
     <VowDetail v-else :vow="selectedVow" />
 
     <footer class="footer section-pad">
+      <p>{{ t('footer.made') }}</p>
       <div class="footer-visitors">
         <a
-          class="footer-counter footer-counter-map"
+          class="footer-counter-hidden"
           href="https://mapmyvisitors.com/web/1c85m"
-          target="_blank"
-          rel="nofollow noreferrer"
-          :title="t('footer.visitors')"
-        >
-          <img
-            src="https://mapmyvisitors.com/map.png?cl=ffffff&t=tt&d=A7H0z-fWuTV5ZWODeP-7_PWS_da3fI-8VE7ocTInB1E&cl=527b9d"
-            :alt="t('footer.visitorsAlt')"
-            referrerpolicy="no-referrer"
-          />
-        </a>
-
-        <a
-          class="footer-counter-legacy"
-          href="https://info.flagcounter.com/TSBZ"
           tabindex="-1"
           aria-hidden="true"
           rel="nofollow noreferrer"
         >
           <img
-            src="https://s01.flagcounter.com/map/TSBZ/size_s/txt_365D7E/border_D5DEE5/pageviews_1/viewers_0/flags_0/"
+            src="https://mapmyvisitors.com/map.png?cl=ffffff&t=tt&d=A7H0z-fWuTV5ZWODeP-7_PWS_da3fI-8VE7ocTInB1E&cl=527b9d"
             alt=""
             referrerpolicy="no-referrer"
           />
         </a>
+
+        <a
+          class="footer-counter footer-counter-flag"
+          href="https://info.flagcounter.com/TSBZ"
+          target="_blank"
+          :title="t('footer.visitors')"
+          rel="nofollow noreferrer"
+        >
+          <img
+            src="https://s01.flagcounter.com/map/TSBZ/size_s/txt_365D7E/border_D5DEE5/pageviews_1/viewers_0/flags_0/"
+            :alt="t('footer.visitorsAlt')"
+            referrerpolicy="no-referrer"
+          />
+        </a>
       </div>
-      <p>{{ t('footer.made') }}</p>
       <span>© 2017—{{ now.getFullYear() }}—∞ · {{ t('footer.copyright') }}</span>
     </footer>
 
@@ -483,11 +483,12 @@ h1, h2, h3, p { margin-top: 0; }
 .footer { min-height: 180px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; color: #796963; background: #f2ebe3; font-size: 12px; }
 .footer p { margin: 0; font-family: Georgia, serif; font-style: italic; }
 .footer > span:last-child { text-align: right; }
-.footer-visitors { position: relative; justify-self: start; }
+.footer-visitors { position: relative; justify-self: center; }
 .footer-counter { display: block; padding: 6px; overflow: hidden; background: rgba(255,255,255,.72); border: 1px solid rgba(54,93,126,.18); border-radius: 9px; box-shadow: 0 8px 24px rgba(54,93,126,.08); }
-.footer-counter-map img { display: block; width: 190px; max-width: 100%; height: auto; border: 0; border-radius: 4px; }
-.footer-counter-legacy { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
-.footer-counter-legacy img { width: 1px; height: 1px; }
+.footer-counter-flag { width: clamp(150px, 14vw, 190px); min-height: 72px; display: grid; place-items: center; }
+.footer-counter-flag img { display: block; width: 100%; max-width: 100%; height: auto; border: 0; border-radius: 4px; image-rendering: auto; }
+.footer-counter-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
+.footer-counter-hidden img { width: 1px; height: 1px; }
 
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; padding: 24px; display: grid; place-items: center; background: rgba(38, 29, 27, .54); backdrop-filter: blur(6px); }
 .love-letter { position: relative; width: min(520px, 100%); padding: clamp(38px, 7vw, 70px); color: #463733; background: #fffaf3; box-shadow: 0 30px 90px rgba(31,20,18,.25); transform: rotate(-1deg); }
@@ -634,6 +635,7 @@ main section[id] { scroll-margin-top: 78px; }
   .footer { padding-top: 42px; padding-bottom: 42px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .footer > span:last-child { text-align: center; }
   .footer-visitors { justify-self: center; }
+  .footer-counter-flag { width: min(190px, 70vw); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -88,7 +88,7 @@ const messages = {
       p2: "以后也一起吃好多顿饭，看好多次日落，在每一个普通的明天里继续喜欢彼此。",
       sign: "爱你的人，ZZ ♡",
     },
-    footer: { visitors: "查看匿名访客地图", visitorsAlt: "Map My Visitors 匿名访客地图", made: "Made with love, for YY & ZZ.", copyright: "我们的爱情空间" },
+    footer: { visitors: "查看访客统计", visitorsAlt: "Flag Counter 访客统计", made: "Made with love, for YY & ZZ.", copyright: "我们的爱情空间" },
   },
   "en-US": {
     common: { zh: "中文", en: "EN", top: "TOP", backTop: "Back to top", menu: "Open navigation", nav: "Main navigation" },
@@ -175,7 +175,7 @@ const messages = {
       p2: "May we share many more meals and sunsets, and keep choosing each other in every ordinary tomorrow.",
       sign: "With love, ZZ ♡",
     },
-    footer: { visitors: "View anonymous visitor map", visitorsAlt: "Map My Visitors anonymous visitor map", made: "Made with love, for YY & ZZ.", copyright: "Our Love Space" },
+    footer: { visitors: "View visitor statistics", visitorsAlt: "Flag Counter visitor statistics", made: "Made with love, for YY & ZZ.", copyright: "Our Love Space" },
   },
 } as const;
 
